@@ -4,7 +4,7 @@ Console.WriteLine("Starting GPIO button listener. Press Ctrl+C to exit.");
 
 // Define the GPIO pins for the buttons.
 // Please change these to the actual pin numbers you are using.
-const int TestPin = 115;
+const int TestPin = 14; // PIN10 - GPIO0_B6
 
 var pins = new[] { TestPin };
 var controller = new GpioController();
