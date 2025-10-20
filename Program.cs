@@ -4,12 +4,9 @@ Console.WriteLine("Starting GPIO button listener. Press Ctrl+C to exit.");
 
 // Define the GPIO pins for the buttons.
 // Please change these to the actual pin numbers you are using.
-const int PinA = 21;
-const int PinB = 20;
-const int PinC = 16;
-const int PinD = 12;
+const int TestPin = 115;
 
-var pins = new[] { PinA, PinB, PinC, PinD };
+var pins = new[] { TestPin };
 var controller = new GpioController();
 var cancellationTokenSource = new CancellationTokenSource();
 
