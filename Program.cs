@@ -1,62 +1,55 @@
 ﻿using System.Device.Gpio;
 
-Console.WriteLine("GPIO Test Program for Radxa Rock 5B. Press Ctrl+C to exit.");
+Console.WriteLine("Starting GPIO button listener. Press Ctrl+C to exit.");
 
-// Używamy fizycznego schematu numeracji pinów (PinNumberingScheme.Board).
-// Będziemy testować Pin 7 na 40-pinowym złączu.
-const int TestPin = 7; 
+// Define the GPIO pins for the buttons.
+// Please change these to the actual pin numbers you are using.
+const int PinA = 21;
+const int PinB = 20;
+const int PinC = 16;
+const int PinD = 12;
 
-// Pin 9 to popularny pin masy (GND) na 40-pinowym złączu.
-Console.WriteLine($"Proszę połączyć Pin {TestPin} z masą (GND), np. z Pinem 9, aby wywołać zdarzenie.");
-
-GpioController controller = null;
+var pins = new[] { PinA, PinB, PinC, PinD };
+var controller = new GpioController();
 var cancellationTokenSource = new CancellationTokenSource();
 
+// Register a handler for the Ctrl+C press
 Console.CancelKeyPress += (sender, eventArgs) => {
     eventArgs.Cancel = true;
     cancellationTokenSource.Cancel();
-    Console.WriteLine("Zamykanie...");
+    Console.WriteLine("Exiting...");
 };
 
 try
 {
-    // Inicjalizujemy kontroler z fizycznym schematem numeracji.
-    controller = new GpioController(PinNumberingScheme.Board);
-    
-    // Otwieramy pin jako wejście z rezystorem podciągającym (pull-up).
-    // Oznacza to, że pin domyślnie jest w stanie WYSOKIM. Podłączenie go do GND pociągnie go do stanu NISKIEGO.
-    controller.OpenPin(TestPin, PinMode.InputPullUp);
-    Console.WriteLine($"Pomyślnie otwarto Pin {TestPin}. Obecna wartość: {controller.Read(TestPin)}");
+    foreach (var pin in pins)
+    {
+        // Open the pin for input with a pull-up resistor.
+        // This means the pin will be HIGH by default, and LOW when the button is pressed (connected to ground).
+        controller.OpenPin(pin, PinMode.InputPullUp);
+        
+        // Register a callback for the 'Falling' event (pin goes from HIGH to LOW)
+        controller.RegisterCallbackForPinValueChangedEvent(pin, PinEventTypes.Falling, OnPinEvent);
+    }
 
-    // Rejestrujemy callbacki dla OBU zboczy, opadającego i rosnącego, aby zobaczyć, czy cokolwiek się dzieje.
-    controller.RegisterCallbackForPinValueChangedEvent(TestPin, PinEventTypes.Falling, OnPinEvent);
-    controller.RegisterCallbackForPinValueChangedEvent(TestPin, PinEventTypes.Rising, OnPinEvent);
+    Console.WriteLine("Listening for button presses...");
 
-    Console.WriteLine("Nasłuchiwanie na zdarzenia...");
-
-    // Czekamy na naciśnięcie Ctrl+C.
+    // Wait until Ctrl+C is pressed
     cancellationTokenSource.Token.WaitHandle.WaitOne();
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Wystąpił błąd: {ex.Message}");
-    Console.WriteLine("\nPorady dotyczące rozwiązywania problemów:");
-    Console.WriteLine("1. Upewnij się, że uruchamiasz program z odpowiednimi uprawnieniami (np. jako root lub użytkownik w grupie 'gpio').");
-    Console.WriteLine("2. Upewnij się, że pin nie jest używany przez inny proces lub moduł kernela.");
-    Console.WriteLine("3. Sprawdź dokładnie swoje połączenia. Pin 7 powinien być połączony z pinem GND, np. Pinem 9.");
+    Console.WriteLine($"An error occurred: {ex.Message}");
 }
 finally
 {
-    Console.WriteLine("Czyszczenie zasobów GPIO.");
-    controller?.Dispose();
+    Console.WriteLine("Cleaning up GPIO resources.");
+    controller.Dispose();
 }
 
-// Funkcja callback, która zostanie wykonana po zdarzeniu na pinie.
+// Callback function that will be executed on a pin event
 void OnPinEvent(object sender, PinValueChangedEventArgs args)
 {
-    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] --- WYKRYTO ZDARZENIE! ---");
-    Console.WriteLine($"Numer pinu: {args.PinNumber}");
-    Console.WriteLine($"Typ zdarzenia: {args.ChangeType}");
+    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Button pressed on pin {args.PinNumber}. Event type: {args.ChangeType}");
 }
-
 
